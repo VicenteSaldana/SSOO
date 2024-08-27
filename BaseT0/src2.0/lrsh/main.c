@@ -26,15 +26,10 @@ typedef struct process{
     long int tiempo_total;
     int exit_code;
 } ProcessInfo;
-
 ProcessInfo procesos[EXEC_PROCESS];
 int contador_procesos = 0;
 char *input_libre;
 /////////////////////
-#define MAX_CHILDREN 16
-pid_t child_pids[MAX_CHILDREN];
-int num_children = 0;
-static int keep_running = 1;  // Variable global para controlar el bucle
 // Function prototypes
 void handle_lrexit();
 void handle_hello_command();
@@ -43,7 +38,6 @@ void handle_is_prime_command(int num);
 
 void handle_sigint(int sig) {
     // Si se recibe SIGINT (Ctrl + C), se simula la ejecución de lrexit
-    keep_running = 0;
     handle_lrexit();
     exit(0);
 }
@@ -60,11 +54,6 @@ void handle_hello_command() {
     } else {
       block_pip = pid;
       waitpid(pid, NULL, 0);
-        // if (num_children < MAX_CHILDREN) {
-        //     child_pids[num_children++] = pid;
-        // } else {
-        //     printf("Error: Número máximo de procesos alcanzado.\n");
-        // }
     }
   }
 
@@ -81,11 +70,6 @@ void handle_sum_command(float num1, float num2) {
     } else {
       block_pip = pid;
       waitpid(pid, NULL, 0);
-        // if (num_children < MAX_CHILDREN) {
-        //     child_pids[num_children++] = pid;
-        // } else {
-        //     printf("Error: Número máximo de procesos alcanzado.\n");
-        // }
     }
 }
 
@@ -118,12 +102,6 @@ void handle_is_prime_command(int num) {
     } else {
       block_pip = pid;
       waitpid(pid, NULL, 0);
-        // // Proceso padre: registrar el PID del hijo
-        // if (num_children < MAX_CHILDREN) {
-        //     child_pids[num_children++] = pid;
-        // } else {
-        //     printf("Error: Número máximo de procesos alcanzado.\n");
-        // }
     }
 }
 
@@ -141,34 +119,65 @@ void handle_lrexit(){
   {
     free_user_input(puntero_input);
   }
-  keep_running = 0;
-      // Enviar SIGINT a todos los procesos hijos
-      for (int i = 0; i < num_children; i++) {
-          if (child_pids[i] != 0) {  // Si el PID no es 0, el proceso sigue vivo
-              kill(child_pids[i], SIGINT);  // Enviar SIGINT
-
-              // Esperar a que el proceso termine
-              time_t start_time = time(NULL);
-              while (time(NULL) - start_time < 10) {
-                  int status;
-                  pid_t result = waitpid(child_pids[i], &status, WNOHANG);
-                  if (result == 0) {
-                      // El proceso aún no ha terminado, seguir esperando
-                      sleep(1);
-                  } else {
-                      // El proceso ha terminado, salir del bucle
-                      child_pids[i] = 0;  // Marcar como terminado
-                      break;
-                  }
-              }
-              // Si el proceso no ha terminado después de 10 segundos, forzar su terminación
-              if (child_pids[i] != 0) {
-                  kill(child_pids[i], SIGKILL);
-                  waitpid(child_pids[i], NULL, 0);  // Esperar a que el proceso sea eliminado
-                  child_pids[i] = 0;  // Marcar como terminado
-              }
-          }
+  // Matar un proceso bloqueante que no haya alcanzado a terminar
+  pid_t child_pid;
+  child_pid = waitpid(block_pip, NULL, WNOHANG);
+  if (child_pid == 0)
+  {
+    kill(block_pip, SIGKILL);
+    waitpid(block_pip, NULL, 0);  // Esperar a que el proceso sea eliminado
+  }
+  for (size_t i = 0; i < contador_procesos; i++)
+  {
+    if (procesos[i].exit_code == -1)
+    {
+      kill(procesos[i].pid, SIGINT);  // Enviar SIGINT
+    }
+  }
+  time_t start_time = time(NULL);
+  int status;
+  while ((time(NULL) - start_time) < 10)
+  {
+    child_pid = waitpid(-1, &status, WNOHANG);
+    if (child_pid == 0)   // Ningun hijo termino
+    {
+      continue;
+    }
+    else if (child_pid == -1)   // No Hay mas proceso hijo
+    {
+      printf("All son process are dead, with SIGINT\n");
+      return;
+    }
+    else
+    {
+      for (size_t i = 0; i < contador_procesos; i++)
+      {
+        if (child_pid == procesos[i].pid)
+        {
+          procesos[i].exit_code = WEXITSTATUS(status);
+          break;
+        }
       }
+    }
+  }
+  // Si se llega a esta linea, entonces aun quedan hijo luego de 10 segundos
+  for (size_t i = 0; i < contador_procesos; i++)
+  {
+    if (procesos[i].exit_code == -1)
+    {
+      kill(procesos[i].pid, SIGKILL);  // Enviar SIGKILL
+      waitpid(procesos[i].pid, NULL, 0);
+    }
+  }
+  child_pid = waitpid(-1, &status, WNOHANG);
+  if (child_pid == -1)
+  {
+    printf("All son process are dead, with SIGKILL\n");
+  }
+  else
+  {
+    printf("ERROR\n");
+  }
 }
 
 
@@ -185,8 +194,9 @@ char *copia_string(char *string){
 }
 
 void handle_lrexec_command(char *path, char **argi){
-  if (contador_procesos > EXEC_PROCESS)
+  if (contador_procesos+1 > EXEC_PROCESS)
   {
+    printf("No se pueden ejecutar mas de %i durante el ciclo de vida de lrsh\n", EXEC_PROCESS);
     return;
   }
   else {
@@ -301,10 +311,11 @@ int main(int argc, char const *argv[])
       handle_lrlist_command();
     }
     else if (strcmp(input[0], "lrexit") == 0) {
-        keep_running = 0;
         handle_lrexit();
         printf("Exiting lrsh...\n");
+        break;
     }
+    
   free_user_input(input);
   puntero_input = NULL;
   }
