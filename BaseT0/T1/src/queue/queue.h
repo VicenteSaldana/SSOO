@@ -1,5 +1,5 @@
 #pragma once
-#include "process.h"
+#include "../process/process.h"
 
 typedef struct QueueNode {
     Process* proceso;
@@ -9,11 +9,12 @@ typedef struct QueueNode {
 typedef struct {
     QueueNode* front;
     QueueNode* rear;
-    int quantum;
+    // int quantum;
 } Queue;
 
 void enqueue(Queue* queue, Process* proceso);
 Process* dequeue(Queue* queue);
 int is_empty(Queue* queue);
 
-void inicializar_cola(Queue* queue, int quantum);
+// void inicializar_cola(Queue* queue, int quantum);
+void inicializar_cola(Queue* queue);

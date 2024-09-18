@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include "queue.h"
 
-void inicializar_cola(Queue* queue, int quantum) {
+// void inicializar_cola(Queue* queue, int quantum) {
+void inicializar_cola(Queue* queue) {
     queue->front = NULL;
     queue->rear = NULL;
-    queue->quantum = quantum; // Asignar el quantum a la cola
+    // queue->quantum = quantum; // Asignar el quantum a la cola
 }
 
 void enqueue(Queue* queue, Process* proceso) {
