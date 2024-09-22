@@ -33,26 +33,33 @@ Process* dequeue(Queue* queue, unsigned int tick) {
     QueueNode* current = queue->front;
     QueueNode* prev = NULL;
     QueueNode* target_prev = NULL;
-    QueueNode* target_node = current;
+    QueueNode* target_node = NULL;
+    int found = 0;
 
-    // Inicializa la máxima prioridad con el valor de prioridad del primer nodo
-    int max_priority_value = (tick - current->proceso->t_lcpu) - current->proceso->deadline;
-
-    // Recorrer la lista para encontrar el proceso de mayor prioridad
+    int max_priority_value = 0;
+    // Recorrer la lista para encontrar el proceso de mayor prioridad en estado READY
     while (current != NULL) {
-        int priority_value = (tick - current->proceso->t_lcpu) - current->proceso->deadline;
+        if (current->proceso->estado == READY) {
+            int priority_value = (tick - current->proceso->t_lcpu) - current->proceso->deadline;
 
-        // Determinar si el nodo actual tiene mayor prioridad
-        if (priority_value > max_priority_value || 
-            (priority_value == max_priority_value && current->proceso->pid < target_node->proceso->pid)) {
-            max_priority_value = priority_value;
-            target_prev = prev;
-            target_node = current;
+            // Determinar si el nodo actual tiene mayor prioridad
+            if (!found || priority_value > max_priority_value || 
+                (priority_value == max_priority_value && current->proceso->pid < target_node->proceso->pid)) {
+                max_priority_value = priority_value;
+                target_prev = prev;
+                target_node = current;
+                found = 1;
+            }
         }
 
         // Avanzar al siguiente nodo
         prev = current;
         current = current->siguiente;
+    }
+
+    if (!found) {
+        // No se encontró un proceso en estado READY
+        return NULL;
     }
 
     // Remover el proceso seleccionado de la cola

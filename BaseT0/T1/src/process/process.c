@@ -29,7 +29,7 @@ Process* inicializar_n_process(InputFile* input_process){
         array_process[i].waiting_time = 0;
         array_process[i].waiting_time = 0;
         array_process[i].time_exceeded_deadline = 0;
-        array_process[i].t_primer_uso_cpu = 0;
+        array_process[i].t_primer_uso_cpu = -1;
         array_process[i].t_lcpu = 0;
         array_process[i].t_icpu = 0;
         array_process[i].quantum = 0;

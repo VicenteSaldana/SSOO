@@ -151,7 +151,7 @@ void cpu_cola(int accion,Queue* high_priority_queue, Queue* low_priority_queue, 
         if (proceso_cpu->num_bursts == 0)
         {
             proceso_cpu->estado = FINISHED;
-            proceso_cpu->turnaround_time = tick - proceso_cpu->t_primer_uso_cpu;
+            proceso_cpu->turnaround_time = tick - proceso_cpu->t_entrada;
             *proceso_terminados +=1;
             printf("proceso %s, termino\n", proceso_cpu->nombre);
             return;
@@ -188,7 +188,7 @@ void cpu_cola(int accion,Queue* high_priority_queue, Queue* low_priority_queue, 
         {
             proceso_cpu->estado = FINISHED;
             printf("tick %i, t_primer_uso_cpu %i\n", tick, proceso_cpu->t_primer_uso_cpu);
-            proceso_cpu->turnaround_time = tick - proceso_cpu->t_primer_uso_cpu;
+            proceso_cpu->turnaround_time = tick - proceso_cpu->t_entrada;
             *proceso_terminados +=1;
             printf("proceso %s, termino\n", proceso_cpu->nombre);
             return;
@@ -296,18 +296,14 @@ void correr_proceso(Queue* high_priority_queue, Queue* low_priority_queue, Proce
             
             printf("proceso sacado: %s, con estado %i, entra en la cpu\n", (*proceso_cpu)->nombre, (*proceso_cpu)->estado);
             (*proceso_cpu)->estado = RUNNING;
-            if (((*proceso_cpu)->t_primer_uso_cpu == 0) && ((*proceso_cpu)->t_entrada != 0))
+            if ((*proceso_cpu)->t_primer_uso_cpu == -1)
             {
                 (*proceso_cpu)->t_primer_uso_cpu = tick;
                 (*proceso_cpu)->response_time = tick - (*proceso_cpu)->t_entrada;
             }
             *proceso_corriendo = 1;
             (*proceso_cpu)->t_icpu = tick;
-            unsigned int t_actual = 0;
-            if (tick > 0)
-            {
-                t_actual = tick - 1;
-            }
+            unsigned int t_actual = tick;
             int pasado_deadline = (t_actual - (*proceso_cpu)->t_lcpu) - (*proceso_cpu)->deadline;
             printf("t_actual: %i, t_lcpu: %i, deadline: %i, proceso %s\n", t_actual, (*proceso_cpu)->t_lcpu, (*proceso_cpu)->deadline, (*proceso_cpu)->nombre);
             printf("pasado_deadline: %i\n", pasado_deadline);
