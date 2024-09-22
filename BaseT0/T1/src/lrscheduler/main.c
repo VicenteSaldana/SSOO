@@ -52,64 +52,28 @@ void ver_cola(Queue* queue){
 }
 
 Process* fist_ready(Queue* high_priority_queue, Queue* low_priority_queue, unsigned int tick){
+    // Recorremos la cola de alta prioridad
     QueueNode* temp = high_priority_queue->front;
-    QueueNode* anterior = NULL;
-    Process* proceso;
-
     while (temp != NULL) {
-        printf("%s ->", temp->proceso->nombre);
         if (temp->proceso->estado == READY) {
-            printf("\nproceso %s encontrado con estado %i\n", temp->proceso->nombre, temp->proceso->estado);
-            if (temp == high_priority_queue->front) {
-                proceso = dequeue(high_priority_queue, tick);
-                ver_cola(high_priority_queue);
-                return proceso;
-            } else {
-                proceso = temp->proceso;
-                anterior->siguiente = temp->siguiente;
-                if (temp == high_priority_queue->rear) {
-                    high_priority_queue->rear = anterior;
-                }
-                free(temp);
-                ver_cola(high_priority_queue);
-                return proceso; 
-            }
+            printf("Proceso %s en high_priority_queue encontrado en estado READY\n", temp->proceso->nombre);
+            return dequeue(high_priority_queue, tick);
         }
-        anterior = temp;
         temp = temp->siguiente;
     }
 
-    printf("\nNO se encontro en high\n");
-    ver_cola(high_priority_queue);
-
-    // Repetir el mismo proceso para la cola de baja prioridad
+    // Recorremos la cola de baja prioridad
     temp = low_priority_queue->front;
-    anterior = NULL;
-
     while (temp != NULL) {
-        printf("%s ->", temp->proceso->nombre);
         if (temp->proceso->estado == READY) {
-            printf("\nproceso %s encontrado con estado %i\n", temp->proceso->nombre, temp->proceso->estado);
-            if (temp == low_priority_queue->front) {
-                proceso = dequeue(low_priority_queue, tick);
-                ver_cola(low_priority_queue);
-                return proceso;
-            } else {
-                proceso = temp->proceso;
-                anterior->siguiente = temp->siguiente;
-                if (temp == low_priority_queue->rear) {
-                    low_priority_queue->rear = anterior;
-                }
-                free(temp);
-                ver_cola(low_priority_queue);
-                return proceso; 
-            }
+            printf("Proceso %s en low_priority_queue encontrado en estado READY\n", temp->proceso->nombre);
+            return dequeue(low_priority_queue, tick);
         }
-        anterior = temp;
         temp = temp->siguiente;
     }
 
-    printf("\nNO se encontro en low\n");
+    // No se encontró ningún proceso en estado READY en ninguna de las dos colas
+    printf("No se encontró ningún proceso en estado READY en ninguna cola\n");
     return NULL;
 }
 
