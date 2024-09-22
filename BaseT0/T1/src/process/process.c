@@ -1,11 +1,21 @@
 #include "process.h"
 #include <stdlib.h>
-
+#include <string.h>
+#ifndef strdup
+char* strdup(const char* src) {
+    size_t len = strlen(src) + 1;
+    char* dest = malloc(len);
+    if (dest) {
+        strcpy(dest, src);
+    }
+    return dest;
+}
+#endif
 Process* inicializar_n_process(InputFile* input_process){
     Process* array_process =  calloc(input_process->len, sizeof(Process));
     for (int i = 0; i < input_process->len; ++i)
     {
-        array_process[i].nombre = input_process->lines[i][0];
+        array_process[i].nombre = strdup(input_process->lines[i][0]);
         array_process[i].pid = atoi(input_process->lines[i][1]);
         array_process[i].estado = READY;
         array_process[i].t_entrada = atoi(input_process->lines[i][2]);

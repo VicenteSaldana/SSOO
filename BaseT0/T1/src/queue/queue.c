@@ -9,7 +9,7 @@ void inicializar_cola(Queue* queue) {
 }
 
 void enqueue(Queue* queue, Process* proceso) {
-    QueueNode* new_node = (QueueNode*)malloc(sizeof(QueueNode));
+    QueueNode* new_node = calloc(1, sizeof(QueueNode));
     new_node->proceso = proceso;
     new_node->siguiente = NULL;
 
@@ -22,20 +22,55 @@ void enqueue(Queue* queue, Process* proceso) {
     }
 }
 
-Process* dequeue(Queue* queue) {
+int is_empty(Queue* queue) {
+    return queue->front == NULL;
+}
+
+Process* dequeue(Queue* queue, unsigned int tick) {
     if (is_empty(queue)) {
         return NULL;
     }
-    QueueNode* temp = queue->front;
-    Process* proceso = temp->proceso;
-    queue->front = queue->front->siguiente;
-    if (queue->front == NULL) {
-        queue->rear = NULL;
-    }
-    free(temp);
-    return proceso;
-}
+    QueueNode* current = queue->front;
+    QueueNode* prev = NULL;
+    QueueNode* target_prev = NULL;
+    QueueNode* target_node = current;
 
-int is_empty(Queue* queue) {
-    return queue->front == NULL;
+    // Inicializa la máxima prioridad con el valor de prioridad del primer nodo
+    int max_priority_value = (tick - current->proceso->t_lcpu) - current->proceso->deadline;
+
+    // Recorrer la lista para encontrar el proceso de mayor prioridad
+    while (current != NULL) {
+        int priority_value = (tick - current->proceso->t_lcpu) - current->proceso->deadline;
+
+        // Determinar si el nodo actual tiene mayor prioridad
+        if (priority_value > max_priority_value || 
+            (priority_value == max_priority_value && current->proceso->pid < target_node->proceso->pid)) {
+            max_priority_value = priority_value;
+            target_prev = prev;
+            target_node = current;
+        }
+
+        // Avanzar al siguiente nodo
+        prev = current;
+        current = current->siguiente;
+    }
+
+    // Remover el proceso seleccionado de la cola
+    if (target_prev == NULL) {
+        // Si el proceso de mayor prioridad es el primer nodo
+        queue->front = target_node->siguiente;
+    } else {
+        target_prev->siguiente = target_node->siguiente; // Ajustar el puntero del nodo anterior al siguiente
+    }
+
+    // Si el nodo eliminado era el último, ajustar el puntero 'rear'
+    if (queue->rear == target_node) {
+        queue->rear = target_prev;
+    }
+
+    // Obtener el proceso del nodo eliminado
+    Process* proceso_prioritario = target_node->proceso;
+    free(target_node);  // Liberar memoria del nodo eliminado
+
+    return proceso_prioritario; // Devolver el proceso de mayor prioridad
 }

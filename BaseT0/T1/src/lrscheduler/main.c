@@ -51,92 +51,69 @@ void ver_cola(Queue* queue){
     printf("\n");
 }
 
-Process* fist_ready(Queue* high_priority_queue, Queue* low_priority_queue){
-    QueueNode* temp = NULL;
+Process* fist_ready(Queue* high_priority_queue, Queue* low_priority_queue, unsigned int tick){
+    QueueNode* temp = high_priority_queue->front;
     QueueNode* anterior = NULL;
     Process* proceso;
-    temp = high_priority_queue->front;
-    printf("cola: ");
-    while (1)
-    {
-        if (is_empty(high_priority_queue)) {
-            break;
-        }
+
+    while (temp != NULL) {
         printf("%s ->", temp->proceso->nombre);
-        if (temp->proceso->estado == READY)
-        {
-            printf("\nporceso %s encontrado con estado %i\n", temp->proceso->nombre, temp->proceso->estado);
-            if (temp == high_priority_queue->front)
-            {
-                proceso = dequeue(high_priority_queue);
+        if (temp->proceso->estado == READY) {
+            printf("\nproceso %s encontrado con estado %i\n", temp->proceso->nombre, temp->proceso->estado);
+            if (temp == high_priority_queue->front) {
+                proceso = dequeue(high_priority_queue, tick);
                 ver_cola(high_priority_queue);
                 return proceso;
-            }
-            proceso = temp->proceso;
-            if (temp->siguiente == NULL)
-            {
+            } else {
+                proceso = temp->proceso;
                 anterior->siguiente = temp->siguiente;
+                if (temp == high_priority_queue->rear) {
+                    high_priority_queue->rear = anterior;
+                }
+                free(temp);
+                ver_cola(high_priority_queue);
+                return proceso; 
             }
-            if (temp->siguiente == NULL)
-            {
-                anterior->siguiente = NULL;
-            }
-            free(temp);
-            ver_cola(high_priority_queue);
-            return proceso; 
-        }
-        if (temp->siguiente == NULL)
-        {
-            break;
         }
         anterior = temp;
         temp = temp->siguiente;
     }
-    printf("\n");
-    printf("NO se encontro en high\n");
+
+    printf("\nNO se encontro en high\n");
     ver_cola(high_priority_queue);
-    temp = NULL;
-    anterior = NULL;
+
+    // Repetir el mismo proceso para la cola de baja prioridad
     temp = low_priority_queue->front;
-    printf("cola: ");
-    while (1)
-    {
-        if (is_empty(low_priority_queue)) {
-            break;
-        }
+    anterior = NULL;
+
+    while (temp != NULL) {
         printf("%s ->", temp->proceso->nombre);
-        if (temp->proceso->estado == READY)
-        {
-            printf("\nporceso %s encontrado con estado %i\n", temp->proceso->nombre, temp->proceso->estado);
-            if (temp == low_priority_queue->front)
-            {
-                proceso = dequeue(low_priority_queue);
+        if (temp->proceso->estado == READY) {
+            printf("\nproceso %s encontrado con estado %i\n", temp->proceso->nombre, temp->proceso->estado);
+            if (temp == low_priority_queue->front) {
+                proceso = dequeue(low_priority_queue, tick);
                 ver_cola(low_priority_queue);
                 return proceso;
-            }
-            proceso = temp->proceso;
-            if (temp->siguiente == NULL)
-            {
+            } else {
+                proceso = temp->proceso;
                 anterior->siguiente = temp->siguiente;
+                if (temp == low_priority_queue->rear) {
+                    low_priority_queue->rear = anterior;
+                }
+                free(temp);
+                ver_cola(low_priority_queue);
+                return proceso; 
             }
-            if (temp->siguiente == NULL)
-            {
-                anterior->siguiente = NULL;
-            }
-            free(temp);
-            ver_cola(low_priority_queue);
-            return proceso; 
-        }
-        if (temp->siguiente == NULL)
-        {
-            break;
         }
         anterior = temp;
         temp = temp->siguiente;
     }
+
     printf("\nNO se encontro en low\n");
     return NULL;
 }
+
+
 
 void actualizar_wait(Queue* queue, unsigned int tick){
     if (queue->front == NULL){ 
@@ -218,15 +195,15 @@ void cpu_cola(int accion,Queue* high_priority_queue, Queue* low_priority_queue, 
         if (proceso_cpu->tipo_cola == 1)
         {
             //
-            put_ele(high_priority_queue, proceso_cpu); // cambiar por el correcto despues
-            // enqueue(high_priority_queue, proceso_cpu); // cambiar por el correcto despues
+            // put_ele(high_priority_queue, proceso_cpu); // cambiar por el correcto despues
+            enqueue(high_priority_queue, proceso_cpu); // cambiar por el correcto despues
             printf("proceso %s entro en cola high\n", proceso_cpu->nombre);
         }
         else
         {
             //
-            put_ele(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
-            // enqueue(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
+            //put_ele(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
+            enqueue(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
             printf("proceso %s entro en cola low\n", proceso_cpu->nombre);
         }
     }
@@ -254,8 +231,8 @@ void cpu_cola(int accion,Queue* high_priority_queue, Queue* low_priority_queue, 
         }
         proceso_cpu->quantum = quantum;
         //
-        put_ele(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
-        // enqueue(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
+        // put_ele(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
+        enqueue(low_priority_queue, proceso_cpu); // cambiar por el correcto despues
         printf("proceso %s entro en cola low\n", proceso_cpu->nombre);
     }
 }
@@ -268,7 +245,8 @@ void nuevo_proceso_cola(Process* array_process, Queue* high_priority_queue, long
             array_process[i].quantum = 2*quantum;
             array_process[i].tipo_cola = 1;
             //
-            put_ele(high_priority_queue, &array_process[i]);
+            // put_ele(high_priority_queue, &array_process[i]);
+            enqueue(high_priority_queue, &array_process[i]);
             printf("proceso %s entro en cola high\n", array_process[i].nombre);
             printf("tick %i, T_i %i\n", tick, array_process[i].t_entrada);
         }
@@ -290,45 +268,35 @@ void mover_low_high(Queue* low_priority_queue, Queue* high_priority_queue, unsig
     if (is_empty(low_priority_queue)) {
         return;
     }
-    QueueNode* temp = NULL;
+    QueueNode* temp = low_priority_queue->front;
     QueueNode* anterior = NULL;
-    Process* proceso;
-    temp = low_priority_queue->front;
-    while (1)
-    {
-        if (upgrade_cola(temp->proceso, tick))
-        {
-            if (temp == low_priority_queue->front)
-            {
-                proceso = dequeue(low_priority_queue);
-                ver_cola(low_priority_queue);
+
+    while (temp != NULL) {
+        if (upgrade_cola(temp->proceso, tick)) {
+            Process* proceso = temp->proceso;
+            if (temp == low_priority_queue->front) {
+                dequeue(low_priority_queue, tick);
                 temp = low_priority_queue->front;
-            }
-            else{
-                proceso = temp->proceso;
+            } else {
                 anterior->siguiente = temp->siguiente;
+                if (temp == low_priority_queue->rear) {
+                    low_priority_queue->rear = anterior;
+                }
+                QueueNode* to_free = temp;
                 temp = temp->siguiente;
-                free(temp);
-                ver_cola(low_priority_queue);
+                free(to_free);
             }
-            proceso->quantum = 2*proceso->quantum;
-            //
-            put_ele(low_priority_queue, proceso); // cambiar por el correcto despues
+            proceso->quantum = 2 * proceso->quantum;
+            enqueue(high_priority_queue, proceso);
             printf("proceso %s, pasa a la cola high\n", proceso->nombre);
-            if (temp == NULL)
-            {
-                return;
-            }
             continue;
-        }
-        if (temp->siguiente == NULL)
-        {
-            return;
         }
         anterior = temp;
         temp = temp->siguiente;
     }
 }
+
+
 void caso_quantum_0(Queue* high_priority_queue, Queue* low_priority_queue, Process** proceso_cpu, int* proceso_corriendo, unsigned int tick, int quantum){
     while (1)
     {
@@ -338,7 +306,8 @@ void caso_quantum_0(Queue* high_priority_queue, Queue* low_priority_queue, Proce
             (*proceso_cpu)->estado = READY;
             (*proceso_cpu)->quantum = quantum;
             //
-            put_ele(low_priority_queue, (*proceso_cpu)); // cambiar por el correcto despues
+            // put_ele(low_priority_queue, (*proceso_cpu)); // cambiar por el correcto despues
+            enqueue(low_priority_queue, (*proceso_cpu)); // cambiar por el correcto despues
             printf("proceso %s entro en cola low\n", (*proceso_cpu)->nombre);
         }
         else
@@ -346,14 +315,14 @@ void caso_quantum_0(Queue* high_priority_queue, Queue* low_priority_queue, Proce
             return;
         }
         printf("No se encuentra un proceso con quantum\n");
-        *proceso_cpu = fist_ready(high_priority_queue, low_priority_queue);
+        *proceso_cpu = fist_ready(high_priority_queue, low_priority_queue, tick);
     }
 }
 
 
 void correr_proceso(Queue* high_priority_queue, Queue* low_priority_queue, Process** proceso_cpu, int* proceso_corriendo, unsigned int tick, int quantum){
     if (*proceso_corriendo == 0){
-        *proceso_cpu = fist_ready(high_priority_queue, low_priority_queue);
+        *proceso_cpu = fist_ready(high_priority_queue, low_priority_queue, tick);
         if (*proceso_cpu != NULL)
         {
             if ((*proceso_cpu)->quantum == 0){
@@ -494,6 +463,10 @@ int main(int argc, char const *argv[])
     }
     // Escribir en una archivo csv las estadisticas
     FILE *output_file = fopen(argv[2], "w");
+    if (output_file == NULL) {
+    perror("Error al abrir el archivo de salida");
+    return 1;
+    }
     for (size_t i = 0; i < n_procesos; i++)
     {
         fprintf(output_file, "%s,", array_process[i].nombre);
@@ -505,7 +478,10 @@ int main(int argc, char const *argv[])
         fprintf(output_file, "%i\n", array_process[i].time_exceeded_deadline);
     }
     fclose(output_file);
-    input_file_destroy(input_file);
+    for (size_t i = 0; i < n_procesos; i++) {
+    free(array_process[i].nombre);
+    }
     free(array_process);
+    input_file_destroy(input_file);
 
 }

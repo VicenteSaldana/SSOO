@@ -13,7 +13,7 @@ typedef struct {
 } Queue;
 
 void enqueue(Queue* queue, Process* proceso);
-Process* dequeue(Queue* queue);
+Process* dequeue(Queue* queue, unsigned int tick);
 int is_empty(Queue* queue);
 
 // void inicializar_cola(Queue* queue, int quantum);
