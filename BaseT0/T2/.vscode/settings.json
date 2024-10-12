@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stdbool.h": "c",
+        "osrms_api.h": "c",
+        "osrms_file.h": "c",
+        "stdio.h": "c"
+    }
+}
