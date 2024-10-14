@@ -16,6 +16,9 @@ extern FILE* MEMORIA;
 #define BITMAP_T_PAGINAS_M 8192
 #define LECTURA_BITMAP 4
 #define COLUMA_BITMAP 32
+#define TABLA_PAGINA_PO 128
+#define ESPACIO_TPSO 8320
+#define TAMANO_TABLA_TPSO 128
 
 void os_mount(char* memory_path);
 
@@ -28,3 +31,7 @@ void os_ls_files(int process_id);
 void os_frame_bitmap();
 
 void os_tp_bitmap();
+
+void os_start_process(int process_id, char* process_name);
+
+void os_finish_process(int process_id);
