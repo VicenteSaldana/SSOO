@@ -1,24 +1,21 @@
 // osrms_file.c
 #include "Osrms_File.h"
-#include "../osrms_API/osrms_API.h" // Asegúrate de ajustar la ruta según tu estructura de carpetas
+#include "../osrms_API/osrms_API.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-// Prototipos de funciones auxiliares
 unsigned int translate_address(int process_id, unsigned int virtual_address);
 int allocate_frame();
 unsigned int assign_virtual_address(int process_id, unsigned int file_size);
 int update_file_entry(int process_id, char* file_name, unsigned int new_size, unsigned int new_virtual_address);
 
-// Implementación de os_open
 osrmsFile* os_open(int process_id, char* file_name, char mode) {
     if (mode != 'r' && mode != 'w') {
         printf("Modo de apertura inválido\n");
         return NULL;
     }
-    // Busca el proceso en la tabla de PCBs
     unsigned char proceso[INFO_PROCESO];
     for (size_t i = 0; i < PROCESO; i++) {
         fseek(MEMORIA, TAMANO_ENTRADA * i, SEEK_SET);
@@ -33,8 +30,6 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             continue;
         }
 
-        // Posición inicial de la tabla de archivos
-        // long int tabla_archivos_pos = ftell(MEMORIA);
         if (mode == 'r') {
             printf("Modo de apertura: Lectura\n");
             unsigned char entrada_archivo[ARCHIVOS];
@@ -79,7 +74,6 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                 }
             }
             printf("Archivo no encontrado\n");
-            // Archivo no encontrado
             return NULL;
         }
         if (mode == 'w') {
@@ -103,19 +97,16 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                 strncpy(nombre_archivo, (char*)&entrada_archivo[1], 14);
                 nombre_archivo[14] = '\0';
                 if (strcmp(nombre_archivo, file_name) == 0) {
-                    // Archivo ya existe
                     printf("El archivo ya existe\n");
                     return NULL;
                 }
             }
 
             if (entrada_libre_pos == -1) {
-                // No hay espacio en la tabla de archivos
                 printf("No hay espacio en la tabla de archivos\n");
                 return NULL;
             }
 
-            // Crear nueva entrada de archivo
             unsigned char nueva_entrada[ARCHIVOS];
             memset(nueva_entrada, 0, ARCHIVOS);
             nueva_entrada[0] = 0x01; // Entrada válida
@@ -162,14 +153,12 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
     return NULL;
 }
 
-    // Implementación de os_close
     void os_close(osrmsFile* file_desc) {
         if (file_desc) {
             free(file_desc);
         }
     }
 
-    // Implementación de os_read_file
     int os_read_file(osrmsFile* file_desc, char* dest) {
         if (!file_desc || file_desc->mode != 'r') {
             printf("Error en el archivo o modo de apertura\n");
@@ -178,7 +167,6 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             return -1;
         }
 
-        // Abrir el archivo de destino para escritura
         FILE* dest_file = fopen(dest, "wb");
         if (!dest_file) {
             perror("Error al abrir el archivo de destino");
@@ -225,7 +213,6 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
         return total_leidos;
     }
 
-    // Implementación de os_write_file
  int os_write_file(osrmsFile* file_desc, char* src) {
     if (!file_desc || file_desc->mode != 'w') {
         printf("Error en el archivo o modo de apertura\n");
@@ -234,14 +221,12 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
         return -1;
     }
 
-    // Abrir el archivo fuente para lectura
     FILE* src_file = fopen(src, "rb");
     if (!src_file) {
         perror("Error al abrir el archivo fuente");
         return -1;
     }
 
-    // Obtener el tamaño del archivo fuente
     fseek(src_file, 0, SEEK_END);
     long src_size = ftell(src_file);
     fseek(src_file, 0, SEEK_SET);
@@ -283,7 +268,6 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
 
     // Escribir en la memoria simulada
     unsigned int bytes_escritos = 0;
-
     while (bytes_escritos < leidos) {
         // Calcular la dirección virtual actual
         unsigned int virtual_address = file_desc->virtual_address + bytes_escritos;
@@ -345,17 +329,14 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
 }
 
     // Función para traducir dirección virtual a física
-
     unsigned int translate_address(int process_id, unsigned int virtual_address) {
     unsigned int VPN = (virtual_address >> 15) & 0xFFF; // 12 bits
     unsigned int offset = virtual_address & 0x7FFF;    // 15 bits
-
     unsigned int first_6_bits = (VPN >> 6) & 0x3F;
 
     // Obtener la dirección de la Tabla de Páginas de Primer Orden (PPO) para el proceso
     unsigned int pcb_offset = (process_id % PROCESO) * TAMANO_ENTRADA;
     unsigned int tabla_pags_primer_orden_pos = 8 * 1024 + pcb_offset + TABLA_PAGINA_PO;
-
     unsigned char ppo_entry[2];
     fseek(MEMORIA, tabla_pags_primer_orden_pos + (first_6_bits * 2), SEEK_SET);
     fread(ppo_entry, sizeof(unsigned char), 2, MEMORIA);
@@ -386,7 +367,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
     // Implementación de allocate_frame
     int allocate_frame() {
         unsigned char byte;
-        for (unsigned int i = 0; i < (FRAME_BITMAP_M / 8); i++) { // Asumiendo FRAME_BITMAP_M es el offset de inicio del Frame Bitmap
+        for (unsigned int i = 0; i < (FRAME_BITMAP_M / 8); i++) { 
             fseek(MEMORIA, FRAME_BITMAP_M + i, SEEK_SET);
             size_t read_byte = fread(&byte, sizeof(unsigned char), 1, MEMORIA);
             if (read_byte != 1) {
@@ -413,23 +394,22 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
 // Función para asignar una dirección virtual disponible
 unsigned int assign_virtual_address(int process_id, unsigned int file_size) {
     printf("Asignando nueva dirección virtual para el proceso ID: %d\n", process_id);
-
-    // Calculate number of pages needed
+    // Calcula el número de páginas necesaria
     unsigned int pages_needed = (file_size + PAGE_SIZE - 1) / PAGE_SIZE;
 
-    // Iterate over TPO entries (0 to 63)
+    // Itera sobre las entradas de TPO (0 a 63)
     for (unsigned int tpo_index = 0; tpo_index < 64; tpo_index++) {
-        unsigned int tpo_base_virtual_address = tpo_index * 64 * PAGE_SIZE; // Base virtual address for this TPO
+        unsigned int tpo_base_virtual_address = tpo_index * 64 * PAGE_SIZE;
 
-        // Check existing files in this TPO
+        // Verifica los archivos existentes en este TPO
         unsigned int largest_end_offset = 0;
 
-        // Read the process's file table
+        // Lee la tabla de archivos del proceso
         unsigned char proceso[INFO_PROCESO];
         fseek(MEMORIA, TAMANO_ENTRADA * process_id, SEEK_SET);
         fread(proceso, sizeof(unsigned char), INFO_PROCESO, MEMORIA);
 
-        // Position in file table
+        // Posición en la tabla de archivos
         unsigned int file_table_pos = ftell(MEMORIA);
 
         for (size_t i = 0; i < CANTIDAD_ARCHIVOS; i++) {
@@ -438,27 +418,26 @@ unsigned int assign_virtual_address(int process_id, unsigned int file_size) {
             fread(entrada_archivo, sizeof(unsigned char), ARCHIVOS, MEMORIA);
 
             if (entrada_archivo[0] == 0x00) {
-                continue; // Invalid entry
+                continue;
             }
 
-            // Get virtual address
+            // Obtener dirección virtual
             unsigned int file_virtual_address = entrada_archivo[19] |
                                                 (entrada_archivo[20] << 8) |
                                                 (entrada_archivo[21] << 16) |
                                                 (entrada_archivo[22] << 24);
 
-            // Get size
+            // Obtener tamaño del archivo
             unsigned int existing_file_size = entrada_archivo[15] |
                                               (entrada_archivo[16] << 8) |
                                               (entrada_archivo[17] << 16) |
                                               (entrada_archivo[18] << 24);
 
-            // Compute TPO index of the file
+            // Computa el índice TPO del archivo
             unsigned int file_tpo_index = (file_virtual_address >> 21) & 0x3F;
 
             if (file_tpo_index == tpo_index) {
-                // File is in the same TPO
-                unsigned int file_offset_within_tpo = file_virtual_address & 0x1FFFFF; // 21 bits for offset within TPO
+                unsigned int file_offset_within_tpo = file_virtual_address & 0x1FFFFF;
                 unsigned int file_end_offset = file_offset_within_tpo + existing_file_size;
                 if (file_end_offset > largest_end_offset) {
                     largest_end_offset = file_end_offset;
@@ -466,22 +445,20 @@ unsigned int assign_virtual_address(int process_id, unsigned int file_size) {
             }
         }
 
-        // Now, see if there is space in this TPO
-        if (largest_end_offset + file_size <= 2 * 1024 * 1024) { // 2 MB per TPO
-            // There is space
+        // Verifica si hay espacio suficiente en este TPO
+        if (largest_end_offset + file_size <= 2 * 1024 * 1024) { // 2 MB por TPO
+            // Hay espacio suficiente
             unsigned int new_virtual_address = tpo_base_virtual_address + largest_end_offset;
             printf("Asignando dirección virtual: %u en TPO %u con offset %u\n", new_virtual_address, tpo_index, largest_end_offset);
             return new_virtual_address;
         }
     }
 
-    // No space found
+    // No hay espacio suficiente
     printf("No se encontraron espacios libres suficientes en la memoria virtual para el proceso ID: %d\n", process_id);
     return 0xFFFFFFFF;
 }
 
-    
-    // Implementación de update_file_entry
     int update_file_entry(int process_id, char* file_name, unsigned int new_size, unsigned int new_virtual_address) {
         unsigned char proceso[INFO_PROCESO];
         unsigned char entrada_archivo[ARCHIVOS];
@@ -541,34 +518,26 @@ unsigned int assign_virtual_address(int process_id, unsigned int file_size) {
         return -1;
     }
 
-    // Implementación de assign_pfn_to_virtual_address
 int assign_pfn_to_virtual_address(int process_id, unsigned int virtual_address, unsigned int pfn) {
-    // Extract VPN
     unsigned int VPN = virtual_address / PAGE_SIZE; // 0 to 4095
-
-    // Extract first and last 6 bits
     unsigned int first_6_bits = (VPN >> 6) & 0x3F;
     unsigned int last_6_bits = VPN & 0x3F;
-
-    // Get the position of the PPO
     unsigned int pcb_offset = (process_id % PROCESO) * TAMANO_ENTRADA;
-    unsigned int tabla_pags_primer_orden_pos = pcb_offset + INFO_PROCESO; // PPO starts after process info
-
-    // Read the SPTN from PPO
+    unsigned int tabla_pags_primer_orden_pos = pcb_offset + INFO_PROCESO;
     unsigned char ppo_entry[2];
     fseek(MEMORIA, tabla_pags_primer_orden_pos + (first_6_bits * 2), SEEK_SET);
     fread(ppo_entry, sizeof(unsigned char), 2, MEMORIA);
     unsigned int sptn = ppo_entry[0] | (ppo_entry[1] << 8);
 
     if (sptn == 0xFFFF) {
-        // Allocate new TPSO
+        // Localizar la TPSO libre
         sptn = allocate_second_level_page_table(process_id, first_6_bits);
         if (sptn == -1) {
             return -1;
         }
     }
 
-    // Write the PFN into the TPSO
+    // Escritura del PFN en la TPSO
     unsigned int tabla_pags_segundo_orden_pos = TPSO_OFFSET + sptn * 128 + last_6_bits * 2;
 
     unsigned char pfn_entry[2];

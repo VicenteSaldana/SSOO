@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 #define TOTAL_VIRTUAL_PAGES 4096
-#define BITMAP_TPSO_SIZE 128 // Tamaño en bytes
-#define BITMAP_TPSO_OFFSET (8 * 1024) // Offset donde comienza el bitmap de TPSO
+#define BITMAP_TPSO_SIZE 128
+#define BITMAP_TPSO_OFFSET (8 * 1024)
 #define PAGE_SIZE 32768
-#define TPSO_OFFSET (8 * 1024 + 128) // After PCB (8KB) and bitmap of tables (128B)
+#define TPSO_OFFSET (8 * 1024 + 128)
 
 // Definición de la estructura osrmsFile
 typedef struct {
