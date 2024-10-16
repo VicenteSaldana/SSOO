@@ -35,3 +35,9 @@ void os_tp_bitmap();
 void os_start_process(int process_id, char* process_name);
 
 void os_finish_process(int process_id);
+
+// Funciones para archivos
+osrmsFile* os_open(int process_id, char* file_name, char mode);
+int os_read_file(osrmsFile* file_desc, char* dest);
+int os_write_file(osrmsFile* file_desc, char* src);
+void os_close(osrmsFile* file_desc);

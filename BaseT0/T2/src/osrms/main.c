@@ -1,4 +1,5 @@
 #include "../osrms_API/osrms_API.h"
+#include "../osrms_File/Osrms_File.h"
 #include <stdio.h>
 
 int main(int argc, char const *argv[])
@@ -8,8 +9,8 @@ int main(int argc, char const *argv[])
     os_mount((char *)argv[1]);
 
     //resto de instrucciones
-    // os_ls_processes();
-    // os_ls_files(234);
+    os_ls_processes();
+    os_ls_files(115);
     // printf("resultado %i\n", os_exists(234,"secre.txt"));
     // os_frame_bitmap();
     // os_tp_bitmap();
@@ -29,6 +30,10 @@ int main(int argc, char const *argv[])
     // os_frame_bitmap();
     // os_tp_bitmap();
     // os_ls_processes();
+    // osrmsFile* archivo_w = os_open(115, "probando2", 'w');
+    // int bytes = os_write_file(archivo_w, "fuente.txt");
+    // os_read_file(archivo_w, "destino.txt");
+    // os_close(archivo_w);
 
 
 

@@ -8,6 +8,10 @@ FILE* MEMORIA = NULL;
 
 void os_mount(char* memory_path){
     MEMORIA = fopen(memory_path, "r+b");
+    if (MEMORIA == NULL) {
+        perror("Error al montar la memoria");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void os_ls_processes(){
@@ -47,7 +51,7 @@ int os_exists(int process_id, char* file_name){
         }
         for (size_t j = 0; j < CANTIDAD_ARCHIVOS; j++)
         {
-            // printf("%li\n", ftell(MEMORIA));
+            printf("%li\n", ftell(MEMORIA));
             fread(bytes, sizeof(unsigned char), ARCHIVOS, MEMORIA);
             if (bytes[0] == 0)
             {
@@ -76,7 +80,7 @@ void os_ls_files(int process_id){
         {
             continue;
         }
-        // printf("PID: 0x%X %d y process_id %d\n", proceso[1], proceso[1], process_id);
+        printf("PID: 0x%X %d y process_id %d\n", proceso[1], proceso[1], process_id);
         if (proceso[1] != process_id)
         {
             continue;
@@ -85,13 +89,13 @@ void os_ls_files(int process_id){
 
         for (size_t j = 0; j < CANTIDAD_ARCHIVOS; j++)
         {
-            // printf("%li\n", ftell(MEMORIA));
+            printf("%li\n", ftell(MEMORIA));
             fread(bytes, sizeof(unsigned char), ARCHIVOS, MEMORIA);
             if (bytes[0] == 0)
             {
                 continue;
             }
-            // printf("Entrada es valida: 0x%X %d\n", bytes[0], bytes[0]);
+            printf("Entrada es valida: 0x%X %d\n", bytes[0], bytes[0]);
             char nombre[15];
             strncpy(nombre, (char*)bytes+1, 14);
             nombre[14] = '\0';
@@ -254,7 +258,7 @@ void os_finish_process(int process_id){
         for (size_t j = 0; j < CANTIDAD_ARCHIVOS; j++)
         {
             // OBTENCION del VPN y offset
-            // printf("COMIENZO NUEVO ARCHIVO: %li linea: %li\n",j, ftell(MEMORIA));
+            printf("COMIENZO NUEVO ARCHIVO: %li linea: %li\n",j, ftell(MEMORIA));
             lugar_archivo = ftell(MEMORIA);
             fread(bytes, sizeof(unsigned char), ARCHIVOS, MEMORIA);
             if (bytes[0] == 0)
@@ -273,39 +277,39 @@ void os_finish_process(int process_id){
             // char direccion_virtual[4];
             // strncpy(direccion_virtual, (char*)bytes+19, 4);
             direccion_virtual = (bytes[22] << 24) | (bytes[21] << 16) | (bytes[20] << 8) | bytes[19];
-            // printf("1: 0x%X, 2: 0x%X, 3: 0x%X, 4: 0x%X\n", bytes[19], bytes[20], bytes[21], bytes[22]);
+            printf("1: 0x%X, 2: 0x%X, 3: 0x%X, 4: 0x%X\n", bytes[19], bytes[20], bytes[21], bytes[22]);
             VPN = 0;
             VPN = (direccion_virtual >> 15) & 0xFFF;;
-            // printf("VPN:0x%X\n", VPN);
+            printf("VPN:0x%X\n", VPN);
             offset = 0;
             offset = direccion_virtual & 0x7FFF;
-            // printf("offset: 0x%X\n", offset);
+            printf("offset: 0x%X\n", offset);
 
             // 
             //////////////////////////
             while (tamano_archivo > 0)
             {
                 // OBTENCION de la entrada del Bitmap de Tablas de Paginas y del Frame bitmap
-                // printf("tamano_archivo: %i, 0x%X\n", tamano_archivo, tamano_archivo);
+                printf("tamano_archivo: %i, 0x%X\n", tamano_archivo, tamano_archivo);
                 TPPO = 0;
                 TPPO = VPN >> 6;
-                // printf("TPPO:0x%X\n", TPPO);
+                printf("TPPO:0x%X\n", TPPO);
                 fseek(MEMORIA, (lugar_proceso + TABLA_PAGINA_PO +(2*TPPO)), SEEK_SET);
                 fread(tp_bitmap, sizeof(unsigned char), 2, MEMORIA);
                 numero_tp = 0;
                 numero_tp = tp_bitmap[1] << 8 | numero_tp;
                 numero_tp = tp_bitmap[0] | numero_tp;
-                // printf("0x%X, 0x%X, 0x%X\n", tp_bitmap[0], tp_bitmap[1], numero_tp);
-                // printf("numero de la Tabla de Paginas de Segundo Orden: %u, 0x%X\n", numero_tp, numero_tp);
+                printf("0x%X, 0x%X, 0x%X\n", tp_bitmap[0], tp_bitmap[1], numero_tp);
+                printf("numero de la Tabla de Paginas de Segundo Orden: %u, 0x%X\n", numero_tp, numero_tp);
                 fseek(MEMORIA, ESPACIO_TPSO, SEEK_SET);
                 fseek(MEMORIA, TAMANO_TABLA_TPSO*numero_tp, SEEK_CUR);
                 // Tabla de Paginas de Segundo Orden
                 D_PFN = 0;
                 D_PFN = VPN & 0x0000003F;
-                // printf("VPN 0x%X, D_PFN 0x%X\n", VPN, D_PFN);
+                printf("VPN 0x%X, D_PFN 0x%X\n", VPN, D_PFN);
                 fseek(MEMORIA, (D_PFN*2), SEEK_CUR);
                 fread(tp_frame, sizeof(unsigned char), 2, MEMORIA);
-                // printf("DONDE %li\n", ftell(MEMORIA));
+                printf("DONDE %li\n", ftell(MEMORIA));
                 frame = 0;
                 frame = tp_frame[1] << 8 | frame;
                 frame = tp_frame[0] | frame;
@@ -318,23 +322,23 @@ void os_finish_process(int process_id){
                 bit_bitmpa = 0;
                 byte_bitmap = frame / 8;
                 bit_bitmpa = frame % 8;
-                // printf("%i, %i\n", byte_bitmap, bit_bitmpa);
+                printf("%i, %i\n", byte_bitmap, bit_bitmpa);
                 fseek(MEMORIA, (FRAME_BITMAP_M+byte_bitmap), SEEK_SET);
                 fread(byte_frame, sizeof(unsigned char), 1, MEMORIA);
                 bit_frame = 0;
                 bit_frame = (byte_frame[0] >> (7-bit_bitmpa)) & 0x01;
-                // printf("bit_frame %i\n", bit_frame);
-                // printf("ANTES 0x%X\n", byte_frame[0]);
+                printf("bit_frame %i\n", bit_frame);
+                printf("ANTES 0x%X\n", byte_frame[0]);
                 byte_frame[0] = ~((0x01 << (7-bit_bitmpa))) & byte_frame[0];
-                // printf("DESPUES 0x%X\n", byte_frame[0]);
+                printf("DESPUES 0x%X\n", byte_frame[0]);
                 fseek(MEMORIA, (FRAME_BITMAP_M+byte_bitmap), SEEK_SET);
                 fwrite(byte_frame, sizeof(unsigned char), 1, MEMORIA);
                 fseek(MEMORIA, (FRAME_BITMAP_M+byte_bitmap), SEEK_SET);
                 fread(byte_frame, sizeof(unsigned char), 1, MEMORIA);
                 bit_frame = 0;
                 bit_frame = (byte_frame[0] >> (7-bit_bitmpa)) & 0x01;
-                // printf("AHORA bit_frame %i\n", bit_frame);
-                // printf("AHORA 0x%X\n", byte_frame[0]);
+                printf("AHORA bit_frame %i\n", bit_frame);
+                printf("AHORA 0x%X\n", byte_frame[0]);
 
                 // MODIFICACION  Bitmap de Tablas de Paginas
                 byte_bitmap = 0;
@@ -345,18 +349,18 @@ void os_finish_process(int process_id){
                 fread(byte_bitmapPO, sizeof(unsigned char), 1, MEMORIA);
                 bit_bitmapPO = 0;
                 bit_bitmapPO = (byte_bitmapPO[0] >> (7-bit_bitmpa)) & 0x01;
-                // printf("bit_bitmapPO %i\n", bit_bitmapPO);
-                // printf("ANTES 0x%X\n", byte_bitmapPO[0]);
+                printf("bit_bitmapPO %i\n", bit_bitmapPO);
+                printf("ANTES 0x%X\n", byte_bitmapPO[0]);
                 byte_bitmapPO[0] = ~((0x01 << (7-bit_bitmpa))) & byte_bitmapPO[0];
-                // printf("DESPUES 0x%X\n", byte_bitmapPO[0]);
+                printf("DESPUES 0x%X\n", byte_bitmapPO[0]);
                 fseek(MEMORIA, (BITMAP_T_PAGINAS_M+byte_bitmap), SEEK_SET);
                 fwrite(byte_bitmapPO, sizeof(unsigned char), 1, MEMORIA);
                 fseek(MEMORIA, (BITMAP_T_PAGINAS_M+byte_bitmap), SEEK_SET);
                 fread(byte_bitmapPO, sizeof(unsigned char), 1, MEMORIA);
                 bit_bitmapPO = 0;
                 bit_bitmapPO = (byte_bitmapPO[0] >> (7-bit_bitmpa)) & 0x01;
-                // printf("AHORA bit_bitmapPO %i\n", bit_bitmapPO);
-                // printf("AHORA 0x%X\n", byte_bitmapPO[0]);
+                printf("AHORA bit_bitmapPO %i\n", bit_bitmapPO);
+                printf("AHORA 0x%X\n", byte_bitmapPO[0]);
             }
             //////////////////////////
 
@@ -365,7 +369,7 @@ void os_finish_process(int process_id){
             fwrite(byte_zero, sizeof(unsigned char), 1, MEMORIA);
 
             fseek(MEMORIA, (lugar_archivo + ARCHIVOS), SEEK_SET);
-            // printf("\n");
+            printf("\n");
         }
         // MODIFICACION  Entrada Proceso
         fseek(MEMORIA, lugar_proceso, SEEK_SET);
